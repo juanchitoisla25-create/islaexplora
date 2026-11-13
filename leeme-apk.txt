@@ -1,0 +1,50 @@
+ISLA EXPLORA — San Andrés
+==========================
+
+QUÉ CONTIENE ESTE PAQUETE
+--------------------------
+index.html     → la app (sitios turísticos, flora y fauna, gastronomía)
+manifest.json  → hace la app "instalable" en el celular (PWA)
+sw.js          → service worker que guarda la app en caché para que
+                 funcione SIN internet después de la primera visita
+icon-192.png / icon-512.png → íconos de la app
+
+FUNCIONA OFFLINE: sí. Toda la información y los gráficos están dentro
+del propio archivo (no dependen de internet), y el service worker
+guarda una copia local, así que una vez que el usuario la abre una
+vez, puede seguir usándola sin señal ni datos.
+
+PASO 1 — PUBLICAR LA APP (igual que tus otras apps de la isla)
+----------------------------------------------------------------
+1. Sube estos 5 archivos tal cual (misma carpeta, sin subcarpetas)
+   a Netlify, igual que hiciste con Isla Mesa, Wi Roots, etc.
+2. Te dará una URL tipo: https://islaexplora.netlify.app
+3. Pruébala en el celular: el navegador debe ofrecer "Agregar a
+   pantalla de inicio" / "Instalar app" — así ya queda como un
+   ícono normal en el teléfono, funcionando offline.
+
+Con esto la mayoría de tus usuarios ya tienen "la app" en su celular,
+sin pasar por Play Store.
+
+PASO 2 — GENERAR EL .APK (importante leer esto)
+--------------------------------------------------
+Yo no puedo compilar un .apk nativo aquí directamente (eso necesita
+herramientas de Android que no tengo instaladas en este entorno).
+Pero con la app ya publicada en Netlify (paso 1), generar el APK es
+gratis y toma 2 minutos con una herramienta de Microsoft pensada
+justo para esto:
+
+1. Entra a https://www.pwabuilder.com
+2. Pega la URL de tu app publicada (ej. https://islaexplora.netlify.app)
+3. PWABuilder analiza el manifest.json y el sw.js automáticamente
+4. Elige la pestaña "Android" y da clic en "Generate Package"
+5. Descarga el .apk (o .aab para subirlo a Play Store) listo para
+   instalar en cualquier celular Android
+
+Ese APK será un contenedor (Trusted Web Activity) que carga tu app
+ya instalada y en caché, así que también funcionará offline una vez
+instalada.
+
+Si en algún momento quieres que te ayude a dejar el manifest o el
+ícono ajustados para que PWABuilder no marque advertencias, dime y
+lo reviso.

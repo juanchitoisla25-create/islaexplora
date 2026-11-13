@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Isla Explora — San Andrés</title>
+<meta name="theme-color" content="#0b1f3a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Guía turística offline de San Andrés Isla: sitios turísticos, flora y fauna, y gastronomía típica.">
+<style>
+  :root{
+    --navy:#0b1f3a; --navy2:#102a4c; --turquoise:#26c6be; --turquoise-d:#0e8f89;
+    --coral:#ff6f61; --gold:#f7c55a; --cream:#fdf6e9; --text:#eaf2f6; --muted:#9fb3c8;
+    --card:#132a4e; --radius:18px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(circle at top, #15335c 0%, var(--navy) 60%);
+    color:var(--text); min-height:100%;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  header{
+    position:sticky; top:0; z-index:20;
+    padding:calc(14px + env(safe-area-inset-top,0px)) 18px 14px;
+    background:linear-gradient(180deg, var(--navy) 70%, rgba(11,31,58,0));
+    backdrop-filter:blur(6px);
+  }
+  header h1{font-size:1.4rem; display:flex; align-items:center; gap:10px;}
+  header h1 .wave{color:var(--turquoise);}
+  header p{color:var(--muted); font-size:.82rem; margin-top:2px;}
+  .search{
+    margin-top:12px; display:flex; align-items:center; gap:8px;
+    background:var(--card); border:1px solid #23466f; border-radius:14px; padding:10px 14px;
+  }
+  .search input{
+    background:transparent; border:none; outline:none; color:var(--text); flex:1; font-size:.95rem;
+  }
+  .search input::placeholder{color:var(--muted);}
+  .tabs{
+    display:flex; gap:8px; margin-top:12px; overflow-x:auto; padding-bottom:2px;
+    scrollbar-width:none;
+  }
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{
+    flex:0 0 auto; padding:9px 16px; border-radius:999px; font-size:.85rem; font-weight:600;
+    background:var(--card); color:var(--muted); border:1px solid #23466f; white-space:nowrap; cursor:pointer;
+    transition:.15s;
+  }
+  .tab.active{background:var(--turquoise); color:#06201f; border-color:var(--turquoise);}
+  main{padding:16px 18px 90px;}
+  .section-title{
+    font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:var(--turquoise);
+    margin:18px 2px 10px; font-weight:700;
+  }
+  .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:12px;}
+  .card{
+    background:var(--card); border-radius:var(--radius); overflow:hidden; cursor:pointer;
+    border:1px solid #1d3b63; transition:transform .15s, border-color .15s;
+    display:flex; flex-direction:column;
+  }
+  .card:active{transform:scale(.97);}
+  .card .art{
+    aspect-ratio:4/3; width:100%; display:flex; align-items:center; justify-content:center;
+    position:relative; overflow:hidden;
+  }
+  .card .art svg{width:70%; height:70%;}
+  .fav-btn{
+    position:absolute; top:8px; right:8px; width:30px; height:30px; border-radius:50%;
+    background:rgba(11,31,58,.55); display:flex; align-items:center; justify-content:center;
+    font-size:15px; border:none; cursor:pointer;
+  }
+  .card .info{padding:10px 12px 14px;}
+  .card .info h3{font-size:.95rem; line-height:1.2;}
+  .card .info span{display:block; font-size:.72rem; color:var(--muted); margin-top:3px;}
+  .empty{
+    text-align:center; color:var(--muted); padding:40px 20px; font-size:.9rem;
+  }
+  /* Modal */
+  .overlay{
+    position:fixed; inset:0; background:rgba(5,14,27,.78); z-index:50; display:none;
+    align-items:flex-end; justify-content:center;
+  }
+  .overlay.open{display:flex;}
+  .sheet{
+    width:100%; max-width:560px; background:var(--navy2); border-radius:22px 22px 0 0;
+    max-height:88vh; overflow-y:auto; animation:up .22s ease-out;
+    padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  }
+  @keyframes up{from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .sheet-art{
+    aspect-ratio:16/9; width:100%; display:flex; align-items:center; justify-content:center;
+    position:relative;
+  }
+  .sheet-art svg{width:45%; height:45%;}
+  .close-btn{
+    position:absolute; top:14px; right:14px; width:34px; height:34px; border-radius:50%;
+    background:rgba(5,14,27,.55); border:none; color:#fff; font-size:18px; cursor:pointer;
+  }
+  .sheet-body{padding:20px 22px;}
+  .sheet-body .cat-tag{
+    display:inline-block; font-size:.7rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.06em; padding:4px 10px; border-radius:999px; margin-bottom:10px;
+  }
+  .sheet-body h2{font-size:1.3rem; margin-bottom:4px;}
+  .sheet-body .sub{color:var(--muted); font-size:.85rem; margin-bottom:14px;}
+  .sheet-body p{font-size:.92rem; line-height:1.55; color:#dce8f0; margin-bottom:14px;}
+  .tip-box{
+    background:#0e2644; border-left:3px solid var(--gold); border-radius:10px;
+    padding:12px 14px; font-size:.85rem; color:var(--cream); display:flex; gap:10px;
+  }
+  .bottom-nav{
+    position:fixed; bottom:0; left:0; right:0; z-index:30;
+    background:var(--navy2); border-top:1px solid #1d3b63;
+    display:flex; justify-content:space-around; padding:10px 6px calc(8px + env(safe-area-inset-bottom,0px));
+  }
+  .nav-btn{
+    background:none; border:none; color:var(--muted); font-size:.68rem; display:flex;
+    flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:4px 10px;
+  }
+  .nav-btn.active{color:var(--turquoise);}
+  .nav-btn svg{width:22px; height:22px;}
+  #installBtn{
+    display:none; position:fixed; right:16px; bottom:76px; z-index:25;
+    background:var(--coral); color:#fff; border:none; border-radius:999px;
+    padding:11px 16px; font-size:.82rem; font-weight:700; box-shadow:0 6px 16px rgba(0,0,0,.35);
+  }
+  #offlineBadge{
+    display:none; position:fixed; top:calc(10px + env(safe-area-inset-top,0px)); left:50%;
+    transform:translateX(-50%); background:var(--gold); color:#2a1d02; font-size:.75rem;
+    font-weight:700; padding:5px 14px; border-radius:999px; z-index:60;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --navy:#0b1f3a; } /* keep dark Caribbean theme regardless of system mode */
+  }
+</style>
+</head>
+<body>
+
+<div id="offlineBadge">📡 Modo sin conexión</div>
+
+<header>
+  <h1><span class="wave">🌊</span> Isla Explora</h1>
+  <p>Sitios turísticos · Flora y fauna · Gastronomía de San Andrés</p>
+  <div class="search">
+    <span>🔎</span>
+    <input id="searchInput" type="text" placeholder="Buscar: Johnny Cay, rondón, iguana...">
+  </div>
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-cat="todos">Todos</div>
+    <div class="tab" data-cat="sitios">🏝️ Sitios</div>
+    <div class="tab" data-cat="fauna">🦎 Flora y Fauna</div>
+    <div class="tab" data-cat="comida">🦀 Gastronomía</div>
+    <div class="tab" data-cat="favoritos">⭐ Favoritos</div>
+  </div>
+</header>
+
+<main id="main"></main>
+
+<button id="installBtn">⬇️ Instalar app</button>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-cat="todos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v9h14v-9"/></svg>Inicio</button>
+  <button class="nav-btn" data-cat="sitios"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>Sitios</button>
+  <button class="nav-btn" data-cat="fauna"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14c2-5 6-8 8-8s6 3 8 8"/><circle cx="12" cy="14" r="5"/></svg>Natura</button>
+  <button class="nav-btn" data-cat="comida"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v8M10 2v8M6 10a4 4 0 008 0M8 10v12"/></svg>Comida</button>
+  <button class="nav-btn" data-cat="favoritos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0112 5a5.5 5.5 0 019.5 7c-2.5 4.5-9.5 9-9.5 9z"/></svg>Favoritos</button>
+</nav>
+
+<div class="overlay" id="overlay">
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<script>
+// ---------- DATA ----------
+const DATA = [
+  // ---- SITIOS TURÍSTICOS ----
+  {id:"johnny-cay", cat:"sitios", name:"Johnny Cay", sub:"Islote de coral · Norte de la isla",
+   color:"#26c6be", icon:"palm",
+   desc:"También llamado Islote Sucre, es el cayo más grande junto a San Andrés: un arrecife de coral cubierto de cocoteros y rodeado de arena blanca y agua turquesa poco profunda.",
+   tip:"Se llega en lancha desde el muelle (Spratt Bight). Lleva efectivo para la entrada y el transporte."},
+  {id:"acuario-haynes", cat:"sitios", name:"El Acuario y Haynes Cay", sub:"Banco de arena · Suroriente",
+   color:"#26c6be", icon:"fish",
+   desc:"Un banco de arena de aguas cristalinas y poco profundas, ideal para nadar con peces de colores y hacer snorkel junto al vecino Haynes Cay.",
+   tip:"Los tours suelen combinar Acuario + Haynes Cay en lancha de medio día."},
+  {id:"hoyo-soplador", cat:"sitios", name:"Hoyo Soplador", sub:"Fenómeno natural · La Loma",
+   color:"#26c6be", icon:"wave",
+   desc:"Una formación rocosa donde el oleaje, al entrar por túneles de coral, empuja el agua y el aire hacia arriba formando un géiser natural que puede alcanzar varios metros de altura.",
+   tip:"El espectáculo es mejor con mar agitado y marea alta."},
+  {id:"piscinita", cat:"sitios", name:"La Piscinita y Cueva de Morgan", sub:"West View",
+   color:"#26c6be", icon:"cave",
+   desc:"Una poza natural protegida por el arrecife, perfecta para nadar junto a peces tropicales, con acceso a la leyenda de la Cueva de Morgan, antiguo refugio de piratas.",
+   tip:"Buen lugar para principiantes de snorkel por sus aguas tranquilas."},
+  {id:"san-luis", cat:"sitios", name:"San Luis", sub:"Costa oriental",
+   color:"#26c6be", icon:"beach",
+   desc:"Playa de arena blanca en la costa este con casas tradicionales de madera sobre pilotes. Más tranquila que el centro, con buen ambiente para snorkel.",
+   tip:"Ideal para probar el 'crab soup' en restaurantes familiares frente al mar."},
+  {id:"rocky-cay", cat:"sitios", name:"Rocky Cay", sub:"Islote rocoso · San Luis",
+   color:"#26c6be", icon:"rock",
+   desc:"Pequeño islote sin playas pero lleno de iguanas y vida marina; uno de los mejores puntos para snorkel cerca de la costa.",
+   tip:"Se puede llegar caminando por un banco de arena en marea baja."},
+  {id:"la-loma", cat:"sitios", name:"La Loma", sub:"Centro cultural raizal",
+   color:"#26c6be", icon:"church",
+   desc:"Pueblo en el punto más alto de la isla, cuna de la cultura raizal, con la histórica Primera Iglesia Bautista de 1847 y miradores panorámicos.",
+   tip:"Buen lugar para escuchar inglés creole y conocer historia local."},
+  {id:"centro", cat:"sitios", name:"Centro / Spratt Bight", sub:"San Andrés Town",
+   color:"#26c6be", icon:"town",
+   desc:"El malecón y la playa principal de la isla, con comercio libre de impuestos, restaurantes, vida nocturna y el punto de salida de las lanchas hacia los cayos.",
+   tip:"Atardecer recomendado desde el muelle turístico."},
+
+  // ---- FLORA Y FAUNA ----
+  {id:"cangrejo-negro", cat:"fauna", name:"Cangrejo Negro", sub:"Gecarcinus ruricola",
+   color:"#ff6f61", icon:"crab",
+   desc:"Especie emblemática del archipiélago. Cada año, entre abril y julio, miles de cangrejos negros migran desde el monte hasta el mar para desovar, un fenómeno natural protegido por ley.",
+   tip:"Durante la migración hay 'pasos de cangrejo' en las vías: conduce despacio."},
+  {id:"iguana", cat:"fauna", name:"Iguana Verde", sub:"Iguana iguana",
+   color:"#ff6f61", icon:"iguana",
+   desc:"Muy común en Rocky Cay y zonas rocosas de la isla; puede medir hasta 1.5 metros y es parte fundamental del ecosistema costero.",
+   tip:"Obsérvalas sin alimentarlas: la comida humana les hace daño."},
+  {id:"cayena", cat:"fauna", name:"Flor de Cayena", sub:"Hibiscus rosa-sinensis",
+   color:"#ff6f61", icon:"flower",
+   desc:"Flor tropical de colores intensos (rojo, naranja, rosa) presente en jardines de toda la isla; símbolo del Caribe colombiano.",
+   tip:"Florece todo el año gracias al clima tropical húmedo."},
+  {id:"cocotero", cat:"fauna", name:"Cocotero", sub:"Cocos nucifera",
+   color:"#ff6f61", icon:"coconut",
+   desc:"La palmera más representativa del paisaje isleño, presente en playas y cayos. Su coco se usa en la gastronomía local, especialmente en el rondón.",
+   tip:"El 'agua de coco' fresco se vende en la playa a buen precio."},
+  {id:"arrecife", cat:"fauna", name:"Arrecife de Coral", sub:"Seaflower - Reserva de Biosfera",
+   color:"#ff6f61", icon:"coral",
+   desc:"San Andrés forma parte de la Reserva de Biosfera Seaflower, una de las mayores reservas marinas del Caribe, con peces loro, meros y corales de gran diversidad.",
+   tip:"Usa protector solar biodegradable para no dañar el arrecife."},
+  {id:"manglar", cat:"fauna", name:"Manglar", sub:"Ecosistema costero protegido",
+   color:"#ff6f61", icon:"mangrove",
+   desc:"Los manglares del lado occidental de la isla protegen la costa de la erosión y son hogar de aves, cangrejos y peces juveniles.",
+   tip:"Se pueden recorrer en tours guiados de kayak."},
+
+  // ---- GASTRONOMÍA ----
+  {id:"rondon", cat:"comida", name:"Rondón", sub:"Plato insignia raizal",
+   color:"#f7c55a", icon:"pot",
+   desc:"Guiso lento de caracol, pescado, cerdo salado, yuca, ñame, plátano y dumplings, cocinado en leche de coco. El nombre viene del inglés 'run down' (todo junto en la olla).",
+   tip:"Pide rondón los fines de semana, cuando se prepara más fresco."},
+  {id:"cangrejo-guisado", cat:"comida", name:"Cangrejo Guisado", sub:"Crab soup / stew crab",
+   color:"#f7c55a", icon:"crabdish",
+   desc:"Cangrejo local guisado con leche de coco, especias y verduras; uno de los platos más tradicionales de la cocina raizal.",
+   tip:"Se sirve acompañado de arroz con coco y patacón."},
+  {id:"patty", cat:"comida", name:"Patty Isleño", sub:"Pastel criollo",
+   color:"#f7c55a", icon:"patty",
+   desc:"Empanada de masa amarilla rellena de carne o pollo sazonado, herencia de la cocina caribeña inglesa; snack típico de cualquier hora del día.",
+   tip:"Se consigue en panaderías locales a precio económico."},
+  {id:"pescado-patacon", cat:"comida", name:"Pescado Frito con Patacón", sub:"Clásico costero",
+   color:"#f7c55a", icon:"fishfry",
+   desc:"Pescado entero frito, crocante por fuera y jugoso por dentro, servido con patacones (plátano verde frito) y arroz con coco.",
+   tip:"Pregunta por el pescado del día; suele ser el más fresco."},
+  {id:"johnny-cake", cat:"comida", name:"Johnny Cake", sub:"Pan tradicional",
+   color:"#f7c55a", icon:"bread",
+   desc:"Pan frito o al horno, suave y ligeramente dulce, típico del desayuno isleño; acompaña huevos, queso o se come solo.",
+   tip:"Mejor recién hecho y caliente, en panaderías locales de La Loma o el centro."},
+  {id:"cocadas", cat:"comida", name:"Cocadas", sub:"Dulce tradicional",
+   color:"#f7c55a", icon:"sweet",
+   desc:"Dulce artesanal de coco rallado cocido con azúcar o panela; se vende en las playas en versiones blancas, de panela y con frutas.",
+   tip:"Busca a las vendedoras tradicionales en el malecón de Spratt Bight."},
+];
+
+const ICONS = {
+  palm:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><path d="M50 78 L50 42" stroke="#8b5e3c" stroke-width="5" fill="none" stroke-linecap="round"/><g stroke="var(--c)" stroke-width="6" stroke-linecap="round" fill="none"><path d="M50 42 Q25 30 18 45"/><path d="M50 42 Q30 20 42 10"/><path d="M50 42 Q58 15 72 14"/><path d="M50 42 Q75 25 82 42"/><path d="M50 42 Q68 50 78 62"/></g>`,
+  fish:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><path d="M20 50 Q40 30 68 50 Q40 70 20 50 Z" fill="var(--c)"/><path d="M68 50 L84 38 L84 62 Z" fill="var(--c)"/><circle cx="32" cy="47" r="2.5" fill="#0b1f3a"/>`,
+  wave:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><path d="M14 60 Q24 48 34 60 T54 60 T74 60 T94 60" stroke="var(--c)" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M50 55 L50 20" stroke="var(--c)" stroke-width="7" stroke-linecap="round"/><path d="M38 30 L50 20 L62 30" stroke="var(--c)" stroke-width="6" fill="none" stroke-linecap="round"/>`,
+  cave:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><path d="M12 78 Q12 30 50 30 Q88 30 88 78 Z" fill="var(--c)"/><circle cx="50" cy="78" r="22" fill="#0b1f3a"/>`,
+  beach:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><path d="M10 70 Q50 50 90 70" stroke="var(--c)" stroke-width="7" fill="none" stroke-linecap="round"/><circle cx="68" cy="28" r="12" fill="var(--c)"/>`,
+  rock:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><path d="M15 70 Q20 35 40 40 Q45 20 60 32 Q80 25 85 55 Q85 70 70 70 Z" fill="var(--c)"/>`,
+  church:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><path d="M38 80 L38 48 L50 36 L62 48 L62 80 Z" fill="var(--c)"/><path d="M50 36 L50 20 M44 24 L56 24" stroke="var(--c)" stroke-width="4" stroke-linecap="round"/>`,
+  town:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><rect x="20" y="40" width="20" height="40" fill="var(--c)"/><rect x="45" y="25" width="20" height="55" fill="var(--c)"/><rect x="70" y="48" width="15" height="32" fill="var(--c)"/>`,
+  crab:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><ellipse cx="50" cy="52" rx="26" ry="18" fill="var(--c)"/><path d="M26 44 L10 30 M74 44 L90 30 M22 58 L8 68 M78 58 L92 68" stroke="var(--c)" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="40" cy="46" r="3" fill="#0b1f3a"/><circle cx="60" cy="46" r="3" fill="#0b1f3a"/>`,
+  iguana:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><path d="M15 65 Q35 70 45 55 Q55 35 80 32" stroke="var(--c)" stroke-width="9" fill="none" stroke-linecap="round"/><circle cx="82" cy="30" r="9" fill="var(--c)"/><path d="M45 55 L52 45 M50 50 L58 42 M55 45 L62 38" stroke="var(--c)" stroke-width="4" stroke-linecap="round"/>`,
+  flower:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><g fill="var(--c)"><ellipse cx="50" cy="30" rx="12" ry="18"/><ellipse cx="50" cy="70" rx="12" ry="18"/><ellipse cx="30" cy="50" rx="18" ry="12"/><ellipse cx="70" cy="50" rx="18" ry="12"/></g><circle cx="50" cy="50" r="9" fill="#f7c55a"/>`,
+  coconut:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><circle cx="50" cy="56" r="26" fill="var(--c)"/><path d="M50 30 Q35 15 20 20 M50 30 Q65 15 80 20 M50 30 L50 16" stroke="var(--c)" stroke-width="6" fill="none" stroke-linecap="round"/>`,
+  coral:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><path d="M50 80 L50 55 M50 55 Q35 55 30 35 M50 55 Q65 55 70 35 M50 65 Q30 65 22 50 M50 65 Q70 65 78 50" stroke="var(--c)" stroke-width="7" fill="none" stroke-linecap="round"/>`,
+  mangrove:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><ellipse cx="50" cy="35" rx="26" ry="16" fill="var(--c)"/><path d="M35 50 L25 78 M50 50 L50 78 M65 50 L75 78" stroke="var(--c)" stroke-width="5" fill="none" stroke-linecap="round"/>`,
+  pot:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><path d="M22 45 L78 45 L70 78 L30 78 Z" fill="var(--c)"/><rect x="18" y="38" width="64" height="9" rx="4" fill="var(--c)"/><path d="M38 20 Q38 32 45 32 Q45 20 52 20 Q52 32 59 32" stroke="var(--c)" stroke-width="4" fill="none" stroke-linecap="round" opacity=".7"/>`,
+  crabdish:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><ellipse cx="50" cy="62" rx="36" ry="10" fill="var(--c)" opacity=".5"/><ellipse cx="50" cy="48" rx="22" ry="15" fill="var(--c)"/><path d="M30 42 L16 30 M70 42 L84 30" stroke="var(--c)" stroke-width="5" fill="none" stroke-linecap="round"/>`,
+  patty:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><path d="M15 55 Q50 20 85 55 Q50 85 15 55 Z" fill="var(--c)"/><path d="M15 55 Q50 65 85 55" stroke="#0b1f3a" stroke-width="3" fill="none"/>`,
+  fishfry:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><path d="M15 50 Q40 30 68 50 Q40 70 15 50 Z" fill="var(--c)"/><path d="M68 50 L85 40 L85 60 Z" fill="var(--c)"/><path d="M30 46 L36 50 L30 54 M42 44 L48 50 L42 56" stroke="#0b1f3a" stroke-width="2" fill="none"/>`,
+  bread:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><ellipse cx="50" cy="55" rx="32" ry="22" fill="var(--c)"/><path d="M30 48 Q50 38 70 48 M28 58 Q50 48 72 58" stroke="#0b1f3a" stroke-width="2.5" fill="none" opacity=".5"/>`,
+  sweet:`<circle cx="50" cy="50" r="48" fill="var(--c)" opacity=".18"/><circle cx="35" cy="55" r="16" fill="var(--c)"/><circle cx="60" cy="42" r="14" fill="var(--c)"/><circle cx="62" cy="65" r="12" fill="var(--c)"/>`,
+};
+
+const CAT_LABEL = {sitios:"Sitio turístico", fauna:"Flora y fauna", comida:"Gastronomía"};
+const CAT_COLOR = {sitios:"#26c6be", fauna:"#ff6f61", comida:"#f7c55a"};
+
+function iconSvg(item){
+  return `<svg viewBox="0 0 100 100" style="--c:${item.color}">${ICONS[item.icon]||ICONS.palm}</svg>`;
+}
+
+// ---------- STATE ----------
+let favorites = JSON.parse(localStorage.getItem("isla_favoritos")||"[]");
+let currentCat = "todos";
+let query = "";
+
+function saveFavs(){ localStorage.setItem("isla_favoritos", JSON.stringify(favorites)); }
+function toggleFav(id, e){
+  if(e) e.stopPropagation();
+  const i = favorites.indexOf(id);
+  if(i>-1) favorites.splice(i,1); else favorites.push(id);
+  saveFavs(); render();
+}
+
+function filteredData(){
+  let list = DATA;
+  if(currentCat==="favoritos") list = list.filter(d=>favorites.includes(d.id));
+  else if(currentCat!=="todos") list = list.filter(d=>d.cat===currentCat);
+  if(query.trim()){
+    const q = query.toLowerCase();
+    list = list.filter(d=> d.name.toLowerCase().includes(q) || d.sub.toLowerCase().includes(q) || d.desc.toLowerCase().includes(q));
+  }
+  return list;
+}
+
+function render(){
+  const main = document.getElementById("main");
+  const list = filteredData();
+  const groups = currentCat==="todos" && !query.trim()
+    ? [["sitios","🏝️ Sitios Turísticos"],["fauna","🦎 Flora y Fauna"],["comida","🦀 Gastronomía Típica"]]
+    : [[null,null]];
+
+  let html = "";
+  if(list.length===0){
+    html = `<div class="empty">🌴 No encontramos resultados.<br>Prueba con otra búsqueda.</div>`;
+  } else if(groups[0][0]===null){
+    html = `<div class="grid">${list.map(cardHtml).join("")}</div>`;
+  } else {
+    groups.forEach(([cat,label])=>{
+      const items = list.filter(d=>d.cat===cat);
+      if(!items.length) return;
+      html += `<div class="section-title">${label}</div><div class="grid">${items.map(cardHtml).join("")}</div>`;
+    });
+  }
+  main.innerHTML = html;
+  main.querySelectorAll(".card").forEach(c=>{
+    c.addEventListener("click", ()=> openSheet(c.dataset.id));
+  });
+  main.querySelectorAll(".fav-btn").forEach(b=>{
+    b.addEventListener("click", (e)=> toggleFav(b.dataset.id, e));
+  });
+}
+
+function cardHtml(d){
+  const isFav = favorites.includes(d.id);
+  return `<div class="card" data-id="${d.id}">
+    <div class="art" style="background:linear-gradient(160deg, ${d.color}22, #0e2644)">
+      ${iconSvg(d)}
+      <button class="fav-btn" data-id="${d.id}">${isFav?"⭐":"☆"}</button>
+    </div>
+    <div class="info"><h3>${d.name}</h3><span>${d.sub}</span></div>
+  </div>`;
+}
+
+function openSheet(id){
+  const d = DATA.find(x=>x.id===id);
+  if(!d) return;
+  const isFav = favorites.includes(d.id);
+  document.getElementById("sheet").innerHTML = `
+    <div class="sheet-art" style="background:linear-gradient(160deg, ${d.color}33, #0b1f3a)">
+      ${iconSvg(d)}
+      <button class="close-btn" id="closeSheet">✕</button>
+    </div>
+    <div class="sheet-body">
+      <span class="cat-tag" style="background:${d.color}25; color:${d.color}">${CAT_LABEL[d.cat]}</span>
+      <h2>${d.name}</h2>
+      <div class="sub">${d.sub}</div>
+      <p>${d.desc}</p>
+      <div class="tip-box"><span>💡</span><span>${d.tip}</span></div>
+      <button id="favToggle" style="margin-top:16px;width:100%;padding:13px;border:none;border-radius:12px;background:${isFav?'#23466f':'var(--coral)'};color:#fff;font-weight:700;font-size:.9rem;">
+        ${isFav?"★ Quitar de favoritos":"☆ Agregar a favoritos"}
+      </button>
+    </div>`;
+  document.getElementById("overlay").classList.add("open");
+  document.getElementById("closeSheet").onclick = closeSheet;
+  document.getElementById("favToggle").onclick = ()=>{ toggleFav(d.id); openSheet(d.id); };
+}
+function closeSheet(){ document.getElementById("overlay").classList.remove("open"); }
+document.getElementById("overlay").addEventListener("click",(e)=>{ if(e.target.id==="overlay") closeSheet(); });
+
+// Tabs
+function setCat(cat){
+  currentCat = cat;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.cat===cat));
+  document.querySelectorAll(".nav-btn").forEach(t=>t.classList.toggle("active", t.dataset.cat===cat));
+  render();
+}
+document.querySelectorAll(".tab").forEach(t=> t.addEventListener("click", ()=> setCat(t.dataset.cat)));
+document.querySelectorAll(".nav-btn").forEach(t=> t.addEventListener("click", ()=> setCat(t.dataset.cat)));
+document.getElementById("searchInput").addEventListener("input",(e)=>{ query = e.target.value; render(); });
+
+render();
+
+// ---------- OFFLINE STATUS ----------
+function updateOfflineBadge(){
+  document.getElementById("offlineBadge").style.display = navigator.onLine ? "none" : "block";
+}
+window.addEventListener("online", updateOfflineBadge);
+window.addEventListener("offline", updateOfflineBadge);
+updateOfflineBadge();
+
+// ---------- PWA INSTALL ----------
+let deferredPrompt;
+window.addEventListener("beforeinstallprompt",(e)=>{
+  e.preventDefault(); deferredPrompt = e;
+  document.getElementById("installBtn").style.display = "block";
+});
+document.getElementById("installBtn").addEventListener("click", async ()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById("installBtn").style.display = "none";
+});
+window.addEventListener("appinstalled", ()=>{ document.getElementById("installBtn").style.display = "none"; });
+
+// ---------- SERVICE WORKER (offline) ----------
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
